@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     String toLongitude = "";
 
 
-    // todo this is the up to date file as 2:21PM Jan 31, 2020
+    // todo Sprint3: this is the up to date file as 7:00PM March 06, 2020
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         ActivityCompat.requestPermissions(this,new String[]{ACCESS_FINE_LOCATION}, 1);
