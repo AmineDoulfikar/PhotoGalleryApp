@@ -32,6 +32,8 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -44,6 +46,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -58,6 +61,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     static final int CAMERA_REQUEST_CODE = 1;
     private String currentPhotoPath = null;
     private int currentPhotoIndex = 0;
+    private int d  = 0;
+
     private ArrayList<String> photoGallery = null;
     private FusedLocationProviderClient fusedLocationClient;
     String imageFileName;
@@ -78,6 +83,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     // todo Sprint3: this is the up to date file as 7:00PM March 06, 2020
+    // todo Amine Push Check Confirmed : 7:00PM March 06, 2020
+    // todo Sajjad Push Check Unconfirmed :
+    // todo Akash Push Check Unconfirmed :
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         ActivityCompat.requestPermissions(this,new String[]{ACCESS_FINE_LOCATION}, 1);
@@ -303,7 +311,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
     private File createImageFile() throws IOException {
         // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyy:MM:dd HH:mm").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
         //Get input from user
 
         fusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
@@ -317,6 +325,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
         imageFileName = "JPEG_" + timeStamp + "_ _" + currentLatitude + "_" + currentLongiutde + "_";
+       // imageFileName = "JPEG_" + "_ _" + currentLatitude + "_" + currentLongiutde + "_";
+
         //text_1.setText( imageFileName,TextView.BufferType.EDITABLE);
       //  imageFileName = text_1.getText().toString();
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
@@ -331,6 +341,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /** Upload is pressed */
     public void UploadButton(View v) {
         if (currentPhotoIndex < photoGallery.size()) {
+            d++;
             Upload Upload = new Upload();
             Upload.execute(currentPhotoPath);
         }else{
@@ -343,47 +354,97 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private class Upload extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... Img) {
+            final String UPLOAD_URL = "http://10.0.2.2:8089/midp/UploadServlet";
 
-            final String Upload_URL = " https://www.googleapis.com/upload/drive/v3/files/\n";
-            String token = "ya29.Il-9B6zlF2Ixp1_pY4IoUeit7i1to7yH11PGcUZOhfflew7bCDUDu3a1VfZiV8sfaPcFEUM5K-2F6_ufiivGx5eLEMrLkajcXcWGX_sPVk0wx5-GeQuDwPncL17O2SWGLA";
             final File Image = new File(currentPhotoPath);
             final int BufferSize = 4096;
 
-            HttpsURLConnection urlConnection;
+
+            HttpURLConnection urlConnection;
+            DataOutputStream dos = null;
+            //DataOutputStream outputStream = null;
+            String[] q = currentPhotoPath.split("/");
+            int idx = q.length - 1;
+
+
+            //DataInputStream inStream = null;
+            String lineEnd = "\r\n";
+            String twoHyphens = "--";
+            String boundary = "*****";
+            //String boundary = "*****" + Long.toString(System.currentTimeMillis()) + "*****";
+
             String serverResponse = "Connect Upload";
+            int bytesRead, bytesAvailable, bufferSize;
+            byte[] buffer;
+            int maxBufferSize = 1 * 1024 * 1024;
+            int serverResponseCode = 0;
+            String fileName = Image.getName();
+            //String fileName = "Waterstyle" + d +".jpg";
 
             try {
 
-                URL urltrue = new URL(Upload_URL);
+                //urlConnection.setRequestProperty("Authorization", "Bearer " + token); For Googledrive athentication
 
-                urlConnection = (HttpsURLConnection) urltrue.openConnection();
-                urlConnection.setRequestProperty("Authorization", "Bearer " + token);
-                urlConnection.setRequestMethod("POST");
-                urlConnection.setUseCaches(false);
-                urlConnection.setDoOutput(true);
-
-                // Get image name
-                urlConnection.setRequestProperty("Filename", Image.getName());
-
-                //open output stream for writing data
-                OutputStream out = urlConnection.getOutputStream();
 
                 // Open input stream for reading data
-                FileInputStream InputFile = new FileInputStream(Image);
+                //FileInputStream InputFile = new FileInputStream(Image);
+                FileInputStream fileInputStream = new FileInputStream(Image);
 
-                byte[] buffer = new byte[(int) BufferSize];
+                System.out.println("ENTER URL ");
+                URL url = new URL(UPLOAD_URL);
 
-                int bytesRead = -1;
+                urlConnection = (HttpURLConnection) url.openConnection();
 
-                while((bytesRead = InputFile.read(buffer)) != -1){
-                    out.write(buffer, 0, bytesRead);
+                urlConnection.setDoInput(true); // Allow Inputs
+                urlConnection.setDoOutput(true); //Allow Outputs
+                urlConnection.setUseCaches(false); //Don't use a cached copy
+
+
+                urlConnection.setRequestMethod("POST");
+                System.out.println(" POST ");
+                urlConnection.setRequestProperty("Connection", "Keep-Alive");
+                urlConnection.setRequestProperty("ENCTYPE", "multipart/form-data");
+                urlConnection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+                urlConnection.setRequestProperty("uploaded_file", fileName);
+
+                dos = new DataOutputStream(urlConnection.getOutputStream());
+                dos.writeBytes(twoHyphens + boundary + lineEnd);
+                dos.writeBytes("Content-Disposition: form-data; name=\"uploaded_file\";filename=\""
+                        + fileName + "\"" + lineEnd);
+
+                dos.writeBytes(lineEnd);
+
+                // create a buffer of  maximum size
+                bytesAvailable = fileInputStream.available();
+                bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                buffer = new byte[bufferSize];
+
+                // read file and write it into form...
+                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                while (bytesRead > 0) {
+                    dos.write(buffer, 0, bufferSize);
+                    bytesAvailable = fileInputStream.available();
+                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
                 }
-                out.close();
-                InputFile.close();
+
+                // send multipart form data necesssary after file data...
+                dos.writeBytes(lineEnd);
+                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+
 
                 // Check HTTP Response code (usefull for errors)
                 int responseCode = urlConnection.getResponseCode();
+
+                serverResponseCode = urlConnection.getResponseCode();
+                String serverResponseMessage = urlConnection.getResponseMessage();
+                Log.i("uploadFile", "HTTP Response is : "
+                        + serverResponseMessage + ": " + serverResponseCode);
                 if (responseCode == HttpURLConnection.HTTP_OK){
+
                     //read server response
                     BufferedReader Reader = new BufferedReader(new InputStreamReader(
                             urlConnection.getInputStream()
