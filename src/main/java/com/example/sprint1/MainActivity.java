@@ -345,7 +345,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Upload Upload = new Upload();
             Upload.execute(currentPhotoPath);
         }else{
-            Snackbar.make(findViewById(R.id.mainLayout), "Sajjad Messed Up Again! No photo to upload.", Snackbar.LENGTH_LONG).show();
+            Snackbar.make(findViewById(R.id.mainLayout), "No photo to upload.", Snackbar.LENGTH_LONG).show();
         }
     }
 
@@ -354,7 +354,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private class Upload extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... Img) {
-            final String UPLOAD_URL = "http://10.0.2.2:8089/midp/UploadServlet";
+            final String UPLOAD_URL = "http://10.0.2.2:8082/midp/UploadServlet";
 
             final File Image = new File(currentPhotoPath);
             final int BufferSize = 4096;
