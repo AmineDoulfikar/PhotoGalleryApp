@@ -1,0 +1,8 @@
+DROP TABLE photos;
+
+CREATE TABLE photos(
+photo_id VARCHAR2(100 CHAR),
+photo_name VARCHAR2(100 CHAR),
+photo_location VARCHAR2(100 CHAR),
+photo_time VARCHAR2(100 CHAR)
+);
